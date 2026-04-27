@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Council Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+      color: #e0e0e0;
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ff006e, #8338ec);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #888;
+      font-size: 0.95em;
+    }
+
+    .input-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+      font-size: 0.95em;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95em;
+      resize: vertical;
+    }
+
+    textarea {
+      min-height: 120px;
+    }
+
+    textarea::placeholder, input::placeholder {
+      color: #666;
+    }
+
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: #ff006e;
+      box-shadow: 0 0 0 3px rgba(255, 0, 110, 0.1);
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95em;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff006e, #8338ec);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 0, 110, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .session-section {
+      display: none;
+    }
+
+    .session-section.active {
+      display: block;
+    }
+
+    .progress-container {
+      margin-bottom: 30px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff006e, #8338ec);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 0.85em;
+      color: #888;
+      text-align: right;
+    }
+
+    .advisors-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .advisor-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .advisor-card.loading {
+      opacity: 0.6;
+    }
+
+    .advisor-name {
+      font-weight: 700;
+      color: #ff006e;
+      margin-bottom: 12px;
+      font-size: 1em;
+    }
+
+    .advisor-content {
+      font-size: 0.9em;
+      color: #ccc;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+
+    .advisor-content p {
+      margin-bottom: 8px;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #ff006e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .verdict-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .verdict-section h2 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: #ff006e;
+      border-bottom: 2px solid rgba(255, 0, 110, 0.3);
+      padding-bottom: 12px;
+    }
+
+    .verdict-section h3 {
+      font-size: 1.1em;
+      margin-top: 20px;
+      margin-bottom: 12px;
+      color: #8338ec;
+    }
+
+    .verdict-section p, .verdict-section li {
+      margin-bottom: 10px;
+      line-height: 1.7;
+      color: #ddd;
+    }
+
+    .verdict-section ul, .verdict-section ol {
+      margin-left: 20px;
+    }
+
+    .emphasis {
+      color: #ff006e;
+      font-weight: 600;
+    }
+
+    .info-box {
+      background: rgba(131, 56, 236, 0.1);
+      border-left: 4px solid #8338ec;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      color: #ddd;
+    }
+
+    .error-box {
+      background: rgba(255, 0, 110, 0.1);
+      border-left: 4px solid #ff006e;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      color: #fcc;
+    }
+
+    @media (max-width: 768px) {
+      .advisors-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 1.8em;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚖️ LLM Council</h1>
+      <p>5 independent advisors. Real disagreements. Clear verdicts.</p>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section" id="inputSection">
+      <div class="form-group">
+        <label for="question">What decision do you need counciled?</label>
+        <textarea id="question" placeholder="E.g., 'Should I launch a $497 course or a $97 workshop?' or 'I'm thinking of pivoting from X to Y. Am I crazy?'"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="context">Additional context (optional)</label>
+        <textarea id="context" placeholder="Relevant info: audience size, revenue numbers, past results, constraints, what's at stake..."></textarea>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-primary" id="startBtn" onclick="startCouncil()">Convene the Council</button>
+        <button class="btn-secondary" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="session-section" id="progressSection">
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text" id="progressText">Initializing council...</div>
+      </div>
+
+      <!-- Advisors Grid -->
+      <div class="advisors-grid" id="advisorsGrid">
+        <div class="advisor-card" id="card-contrarian">
+          <div class="advisor-name"><span class="loading-spinner"></span>The Contrarian</div>
+          <div class="advisor-content">Analyzing for flaws and risks...</div>
+        </div>
+        <div class="advisor-card" id="card-firstprinciples">
+          <div class="advisor-name"><span class="loading-spinner"></span>First Principles Thinker</div>
+          <div class="advisor-content">Rebuilding from fundamentals...</div>
+        </div>
+        <div class="advisor-card" id="card-expansionist">
+          <div class="advisor-name"><span class="loading-spinner"></span>The Expansionist</div>
+          <div class="advisor-content">Exploring hidden opportunities...</div>
+        </div>
+        <div class="advisor-card" id="card-outsider">
+          <div class="advisor-name"><span class="loading-spinner"></span>The Outsider</div>
+          <div class="advisor-content">Fresh perspective incoming...</div>
+        </div>
+        <div class="advisor-card" id="card-executor">
+          <div class="advisor-name"><span class="loading-spinner"></span>The Executor</div>
+          <div class="advisor-content">Planning actionable steps...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verdict Section -->
+    <div class="session-section" id="verdictSection">
+      <div id="verdictContent"></div>
+
+      <div style="margin-top: 30px; display: flex; gap: 12px;">
+        <button class="btn-secondary" onclick="downloadTranscript()">📥 Download Transcript</button>
+        <button class="btn-secondary" onclick="startOver()">← Start New Council</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const advisors = ['contrarian', 'firstprinciples', 'expansionist', 'outsider', 'executor'];
+    let councilState = {
+      question: '',
+      context: '',
+      responses: {},
+      reviews: {},
+      verdict: ''
+    };
+
+    async function startCouncil() {
+      const question = document.getElementById('question').value.trim();
+      const context = document.getElementById('context').value.trim();
+
+      if (!question) {
+        alert('Please enter your council question.');
+        return;
+      }
+
+      councilState.question = question;
+      councilState.context = context;
+
+      document.getElementById('inputSection').classList.remove('active');
+      document.getElementById('progressSection').classList.add('active');
+
+      const framedQuestion = context 
+        ? `${question}\n\nContext: ${context}`
+        : question;
+
+      try {
+        // Phase 1: Get all 5 advisor responses in parallel
+        updateProgress('Convening advisors...', 20);
+        await getAdvisorResponses(framedQuestion);
+
+        // Phase 2: Peer reviews
+        updateProgress('Peer review round...', 60);
+        await getPeerReviews();
+
+        // Phase 3: Chairman synthesis
+        updateProgress('Synthesizing verdict...', 90);
+        await getVerdictSynthesis(framedQuestion);
+
+        // Complete
+        updateProgress('Council complete', 100);
+        setTimeout(() => {
+          document.getElementById('progressSection').classList.remove('active');
+          document.getElementById('verdictSection').classList.add('active');
+        }, 500);
+      } catch (error) {
+        showError(`Council failed: ${error.message}`);
+      }
+    }
+
+    async function getAdvisorResponses(question) {
+      const descriptions = {
+        contrarian: 'Actively looks for what\'s wrong, what\'s missing, what will fail. Assumes the idea has a fatal flaw and tries to find it.',
+        firstprinciples: 'Ignores the surface-level question and asks "what are we actually trying to solve here?" Strips away assumptions.',
+        expansionist: 'Looks for upside everyone else is missing. What could be bigger? What adjacent opportunity is hiding?',
+        outsider: 'Has zero context about the user\'s field or history. Responds purely to what\'s in front of them.',
+        executor: 'Only cares about one thing: can this actually be done, and what\'s the fastest path to doing it?'
+      };
+
+      const promises = advisors.map(advisor => 
+        callAPI({
+          role: 'user',
+          content: `You are the ${advisor === 'firstprinciples' ? 'First Principles Thinker' : advisor.charAt(0).toUpperCase() + advisor.slice(1)} on an LLM Council.
+
+Your thinking style: ${descriptions[advisor]}
+
+A user has brought this question to the council:
+
+---
+${question}
+---
+
+Respond from your perspective. Be direct and specific. Don't hedge or try to be balanced. Lean fully into your assigned angle.
+
+Keep your response between 150-300 words. No preamble. Go straight into your analysis.`
+        }).then(response => {
+          councilState.responses[advisor] = response;
+          updateAdvisorCard(advisor, response);
+          return response;
+        })
+      );
+
+      await Promise.all(promises);
+    }
+
+    async function getPeerReviews() {
+      const responsesText = advisors.map((a, i) => 
+        `**Response ${String.fromCharCode(65 + i)}:**\n${councilState.responses[a]}`
+      ).join('\n\n');
+
+      const promises = advisors.map(reviewer =>
+        callAPI({
+          role: 'user',
+          content: `You are reviewing the outputs of an LLM Council. Five advisors independently answered this question:
+
+---
+${councilState.question}
+---
+
+Here are their anonymized responses:
+
+${responsesText}
+
+Answer these three questions. Be specific.
+
+1. Which response is the strongest? Why?
+2. Which response has the biggest blind spot? What is it missing?
+3. What did ALL five responses miss that the council should consider?
+
+Keep your review under 200 words. Be direct.`
+        }).then(response => {
+          councilState.reviews[reviewer] = response;
+          return response;
+        })
+      );
+
+      await Promise.all(promises);
+    }
+
+    async function getVerdictSynthesis(question) {
+      const advisorResponses = advisors.map(a => 
+        `**The ${a === 'firstprinciples' ? 'First Principles Thinker' : a.charAt(0).toUpperCase() + a.slice(1)}:**\n${councilState.responses[a]}`
+      ).join('\n\n');
+
+      const reviewsText = Object.entries(councilState.reviews)
+        .map(([advisor, review]) => `**${advisor} review:** ${review}`)
+        .join('\n\n');
+
+      const response = await callAPI({
+        role: 'user',
+        content: `You are the Chairman of an LLM Council. Your job is to synthesize the work of 5 advisors and their peer reviews into a final verdict.
+
+The question brought to the council:
+---
+${question}
+---
+
+ADVISOR RESPONSES:
+${advisorResponses}
+
+PEER REVIEWS:
+${reviewsText}
+
+Produce the council verdict using this exact structure:
+
+## Where the Council Agrees
+[Points multiple advisors converged on independently. High-confidence signals.]
+
+## Where the Council Clashes
+[Genuine disagreements. Present both sides. Explain why reasonable advisors disagree.]
+
+## Blind Spots the Council Caught
+[Things that only emerged through peer review. Things individual advisors missed that others flagged.]
+
+## The Recommendation
+[A clear, direct recommendation. Not "it depends." A real answer with reasoning.]
+
+## The One Thing to Do First
+[A single concrete next step. Not a list. One thing.]
+
+Be direct. Don't hedge.`
+      });
+
+      councilState.verdict = response;
+      renderVerdict(response);
+    }
+
+    async function callAPI(message) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [message]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.content[0].text;
+    }
+
+    function updateAdvisorCard(advisor, content) {
+      const card = document.getElementById(`card-${advisor}`);
+      const contentDiv = card.querySelector('.advisor-content');
+      contentDiv.textContent = content.substring(0, 400) + (content.length > 400 ? '...' : '');
+    }
+
+    function updateProgress(text, percent) {
+      document.getElementById('progressText').textContent = text;
+      document.getElementById('progressFill').style.width = percent + '%';
+    }
+
+    function renderVerdict(verdict) {
+      const formatted = verdict
+        .replace(/## /g, '<h2>')
+        .replace(/\n([A-Z][A-Za-z ]*):([^\n]*)/g, '\n<strong>$1:</strong> $2')
+        .replace(/\n/g, '</h2><p>')
+        + '</p>';
+
+      document.getElementById('verdictContent').innerHTML = `
+        <div class="verdict-section">
+          <h2>⚖️ Council Verdict</h2>
+          ${formatted}
+        </div>
+      `;
+    }
+
+    function downloadTranscript() {
+      const transcript = `# LLM Council Session Transcript
+
+## Question
+${councilState.question}
+
+${councilState.context ? `## Context\n${councilState.context}\n` : ''}
+
+## Council Responses
+${advisors.map(a => `### The ${a === 'firstprinciples' ? 'First Principles Thinker' : a.charAt(0).toUpperCase() + a.slice(1)}\n${councilState.responses[a]}`).join('\n\n')}
+
+## Peer Reviews
+${Object.entries(councilState.reviews).map(([a, r]) => `### ${a}\n${r}`).join('\n\n')}
+
+## Final Verdict
+${councilState.verdict}
+`;
+
+      const blob = new Blob([transcript], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `council-transcript-${new Date().toISOString().slice(0, 10)}.md`;
+      a.click();
+    }
+
+    function startOver() {
+      councilState = { question: '', context: '', responses: {}, reviews: {}, verdict: '' };
+      document.getElementById('inputSection').classList.add('active');
+      document.getElementById('verdictSection').classList.remove('active');
+      document.getElementById('question').value = '';
+      document.getElementById('context').value = '';
+      document.getElementById('question').focus();
+    }
+
+    function clearForm() {
+      document.getElementById('question').value = '';
+      document.getElementById('context').value = '';
+    }
+
+    function showError(message) {
+      alert(message);
+      startOver();
+    }
+  </script>
+</body>
+</html>
